@@ -1,3 +1,3 @@
 # Facebook
 
-Facebook is a social network
+Facebook is a social network.

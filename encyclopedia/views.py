@@ -22,15 +22,24 @@ def index(request):
 
 
 def handleForm(request):
-    print(request.GET)
     if request.method == 'GET':
         form = SearchForm(request.GET)
         if form.is_valid():
             pageTitle = form.cleaned_data['pageTitle']
-            return page(request, pageTitle, formhandling=True)
+            exists = util.get_entry(pageTitle)
+            if exists:
+                return HttpResponseRedirect(reverse('page', args=(pageTitle,)))
+            suggestions = list(
+                filter(lambda entry: pageTitle.lower() in entry.lower(), util.list_entries()))
+            return render(request, 'encyclopedia/suggestions.html', {
+                "input": SearchForm(),
+                "entries": suggestions,
+                "title": "Suggestions",
+                "content": "<h1>Suggestions</h1>"
+            })
 
 
-def page(request, title, formhandling=False):
+def page(request, title):
     capTitle = title.capitalize()
     content = util.get_entry(capTitle)
     if content is not None:
@@ -39,15 +48,6 @@ def page(request, title, formhandling=False):
             "entries": util.list_entries(),
             "title": title.capitalize(),
             "content": markdown2.markdown(content)
-        })
-    if formhandling:
-        suggestions = list(
-            filter(lambda entry: title.lower() in entry.lower(), util.list_entries()))
-        return render(request, 'encyclopedia/suggestions.html', {
-            "input": SearchForm(),
-            "entries": suggestions,
-            "title": "Suggestions",
-            "content": "<h1>Suggestions</h1>"
         })
     return render(request, 'encyclopedia/page.html', {
         "input": SearchForm(),
@@ -60,13 +60,13 @@ def page(request, title, formhandling=False):
 def newPage(request):
     if request.method == 'GET':
         return render(request, 'encyclopedia/newPage.html')
-    else:
+    elif request.method == 'POST':
         form = request.POST
         title = form['title']
         body = form['content']
         if not util.get_entry(title):
             util.save_entry(title, body)
-            return page(request, title)
+            return HttpResponseRedirect(reverse('page', args=(title,)))
         return render(request, 'encyclopedia/page.html', {
             "input": SearchForm(),
             "entries": util.list_entries(),
@@ -88,10 +88,10 @@ def editPage(request):
         title = request.POST['title']
         body = request.POST['newBody']
         util.save_entry(title, body)
-        return page(request, title)
+        return HttpResponseRedirect(reverse('page', args=(title,)))
 
 
 def randomPage(request):
     titles = util.list_entries()
     randomTitle = titles[randrange(len(titles))]
-    return page(request, randomTitle)
+    return HttpResponseRedirect(reverse('page', args=(randomTitle,)))

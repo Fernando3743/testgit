@@ -8,8 +8,10 @@
 
 {% block body %}
     <div>{{ content |safe }}</div>
+    {% if title != 'Not found' and title != 'Page already exist' %}
     <form action="{% url 'editPage' %}" method="get">
         <input type="text" name="title" value="{{ title }}" hidden>
         <input type="submit" value="Edit this page.">
     </form>
+    {% endif %}
 {% endblock %}
